@@ -20,10 +20,9 @@ import {
 } from '@ant-design/icons';
 import axios from 'axios';
 import { getDaysAgo } from '../utils/helpers';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import SideBar from '../components/SideBar';
 const {  Content } = Layout;
-const { Title } = Typography;
 
 const upcomingInterviews = [
   { id: 1, candidate: 'John Doe', position: 'Frontend Developer', time: '2023-06-01 10:00', interviewer: 'Sarah Manager' },
@@ -32,10 +31,26 @@ const upcomingInterviews = [
 ];
 
 const Dashboard = () => {
+  const [summary, setSummary] = useState([]);
   const [recentCandidates, setCandidates] = useState([]);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    axios
+      .get("/api/dashboard/summary")
+      .then((response) => {
+        setSummary(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("Error fetching dashboard summary:", error);
+        setError("Failed to load dashboard data.");
+        setLoading(false);
+      });
+  }, []);
+
   useEffect(() => {
     const fetchCandidates = async () => {
-      // setLoading(true);
       try {
         const response = await axios.get("/api/candidatesv2/", {
           params: { sort_by: "created_at", order: "desc", limit: 5,},
@@ -84,7 +99,7 @@ const Dashboard = () => {
               <Card>
                 <Statistic 
                   title="Active Jobs" 
-                  value={12} 
+                  value={summary.total_jobs} 
                   prefix={<FileSearchOutlined />} 
                 />
               </Card>
@@ -93,7 +108,7 @@ const Dashboard = () => {
               <Card>
                 <Statistic 
                   title="Total Candidates" 
-                  value={148} 
+                  value={summary.total_candidates} 
                   prefix={<UserOutlined />} 
                 />
               </Card>
@@ -102,7 +117,7 @@ const Dashboard = () => {
               <Card>
                 <Statistic 
                   title="Interviews This Week" 
-                  value={8} 
+                  value={summary.total_interviews_this_week} 
                   prefix={<ScheduleOutlined />} 
                 />
               </Card>

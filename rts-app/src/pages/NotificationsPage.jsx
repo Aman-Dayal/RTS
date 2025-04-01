@@ -1,51 +1,62 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Space, List, Card, Typography, Badge, Button, Tabs, Empty, Spin, Switch, Divider, Layout } from 'antd';
 import { BellOutlined, CheckOutlined, DeleteOutlined, SettingOutlined } from '@ant-design/icons';
 // import DashboardLayout from '../components/DashboardLayout';
 import SideBar from '../components/SideBar';
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
-
+import axios from "axios";
+import { getDaysAgo } from "../utils/helpers"
 // Mock data for notifications
-const mockNotifications = [
-  {
-    id: 1,
-    title: 'New application submitted',
-    description: 'John Doe applied for Frontend Developer position',
-    time: '10 minutes ago',
-    read: false,
-    type: 'application'
-  },
-  {
-    id: 2,
-    title: 'Interview scheduled',
-    description: 'Interview with Sarah Smith for UX Designer on June 15, 2023',
-    time: '2 hours ago',
-    read: false,
-    type: 'interview'
-  },
-  {
-    id: 3,
-    title: 'Task assigned',
-    description: 'Review candidates for Marketing Manager position',
-    time: '1 day ago',
-    read: true,
-    type: 'task'
-  },
-  {
-    id: 4,
-    title: 'Candidate status updated',
-    description: 'Michael Johnson moved to "Hired" stage',
-    time: '2 days ago',
-    read: true,
-    type: 'status'
-  },
-];
+// const mockNotifications = [
+//   {
+//     id: 1,
+//     title: 'New application submitted',
+//     description: 'John Doe applied for Frontend Developer position',
+//     time: '10 minutes ago',
+//     read: false,
+//     type: 'application'
+//   },
+//   {
+//     id: 2,
+//     title: 'Interview scheduled',
+//     description: 'Interview with Sarah Smith for UX Designer on June 15, 2023',
+//     time: '2 hours ago',
+//     read: false,
+//     type: 'interview'
+//   },
+//   {
+//     id: 3,
+//     title: 'Task assigned',
+//     description: 'Review candidates for Marketing Manager position',
+//     time: '1 day ago',
+//     read: true,
+//     type: 'task'
+//   },
+//   {
+//     id: 4,
+//     title: 'Candidate status updated',
+//     description: 'Michael Johnson moved to "Hired" stage',
+//     time: '2 days ago',
+//     read: true,
+//     type: 'status'
+//   },
+// ];
 
 const NotificationsPage = () => {
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+  useEffect(() => {
+    axios
+      .get("/api/notifications")
+      .then((response) => {
+        console.log('--__--',response);
+        setNotifications(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching notifications:", error);
+      });
+  }, []);
   const unreadCount = notifications.filter(n => !n.read).length;
   
   const markAsRead = (id) => {
@@ -97,8 +108,8 @@ const NotificationsPage = () => {
         }
         description={
           <>
-            <div>{item.description}</div>
-            <Text type="secondary" style={{fontSize:'0.75rem'}}>{item.time}</Text>
+            <div>{item.message}</div>
+            <Text type="secondary" style={{fontSize:'0.75rem'}}>{getDaysAgo(item.created_at)}</Text>
           </>
         }
       />
