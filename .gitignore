@@ -1,0 +1,18 @@
+# Node.js
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+htmlcov
+rtsvnv
+# IDE files
+.vscode/
+.idea/
+
+rtsfe
