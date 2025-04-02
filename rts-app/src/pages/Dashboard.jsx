@@ -9,7 +9,7 @@ import {
   Statistic, 
   List, 
   Tag, 
-  Typography, 
+  Form, 
   Avatar,
 } from 'antd';
 import { 
@@ -19,9 +19,11 @@ import {
   ScheduleOutlined,
 } from '@ant-design/icons';
 import axios from 'axios';
-import { getDaysAgo } from '../utils/helpers';
+import { getFormattedDateTime  } from '../utils/helpers';
 import { Link } from 'react-router-dom';
 import SideBar from '../components/SideBar';
+import BaseForm from '../components/BaseForm';
+import { candidateFields } from '../constants/formFields';
 const {  Content } = Layout;
 
 const upcomingInterviews = [
@@ -31,10 +33,15 @@ const upcomingInterviews = [
 ];
 
 const Dashboard = () => {
+  const [form] = Form.useForm();
+
   const [summary, setSummary] = useState([]);
   const [recentCandidates, setCandidates] = useState([]);
   const [error, setError] = useState(null);
-  
+  const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState(null);
+
   useEffect(() => {
     axios
       .get("/api/dashboard/summary")
@@ -64,11 +71,35 @@ const Dashboard = () => {
     fetchCandidates();
   }, []);
 
+  const handleCancel = () => {
+    console.log("Closing modal");
+    setIsModalOpen(false);
+    setEditingCandidate(null);
+    form.resetFields();
+  };
+  const handleAddCandidate = async () => {
+    try {
+      setLoading(true);
+      const { notes, resume, applied_position, ...formData }= form.getFieldsValue(); // Get all form values
+      console.log(formData);
+      const response = await axios.post("/api/candidates", formData);
+      console.log("Response:", response.data);
+      // message.success("Candidate created successfully!");
+
+      form.resetFields(); // Clear form after successful submission
+    } catch (error) {
+      console.error("Error creating profile:", error);
+      setError("Failed to create profile.");
+      // message.error("Error creating candidate.");
+    } finally {
+      setLoading(false);
+    }
+  };
   const onAdd = () => {
     console.log('add button clicked');
     };
-  const onEdit = () => {
-    console.log('edit button clicked');
+  const addCandidate = () => {
+    setIsModalOpen(true);
     };
   const onDelete = () => {
     console.log('delete button clicked');
@@ -149,7 +180,7 @@ const Dashboard = () => {
           </Button>
         </Col>
         <Col xs={24} sm={12} md={6}>
-          <Button type="default" block onClick={onEdit}>
+          <Button type="default" block onClick={addCandidate}>
             Add Candidate
           </Button>
         </Col>
@@ -178,7 +209,7 @@ const Dashboard = () => {
                       <List.Item.Meta
                         avatar={<Avatar src={item.avatar} />}
                         title={<a href={`/candidates/${item.id}`}>{item.name}</a>}
-                        description={getDaysAgo(item.created_at)}
+                        description={getFormattedDateTime(item.created_at)}
                       />
                       <Tag color={getStatusColor(item.status)}>{item.status}</Tag>
                     </List.Item>
@@ -213,6 +244,15 @@ const Dashboard = () => {
           </Row>
         </Content>
         </div>
+        <BaseForm
+      isOpen={isModalOpen}
+      onCancel={handleCancel}
+      onSubmit={handleAddCandidate}
+      form={form}
+      title="Add New Candidate"
+      editing={false}
+      fields={candidateFields}
+  />
       </Layout>
   );
 };

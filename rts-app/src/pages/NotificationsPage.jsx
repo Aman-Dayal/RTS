@@ -6,42 +6,7 @@ import SideBar from '../components/SideBar';
 const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 import axios from "axios";
-import { getDaysAgo } from "../utils/helpers"
-// Mock data for notifications
-// const mockNotifications = [
-//   {
-//     id: 1,
-//     title: 'New application submitted',
-//     description: 'John Doe applied for Frontend Developer position',
-//     time: '10 minutes ago',
-//     read: false,
-//     type: 'application'
-//   },
-//   {
-//     id: 2,
-//     title: 'Interview scheduled',
-//     description: 'Interview with Sarah Smith for UX Designer on June 15, 2023',
-//     time: '2 hours ago',
-//     read: false,
-//     type: 'interview'
-//   },
-//   {
-//     id: 3,
-//     title: 'Task assigned',
-//     description: 'Review candidates for Marketing Manager position',
-//     time: '1 day ago',
-//     read: true,
-//     type: 'task'
-//   },
-//   {
-//     id: 4,
-//     title: 'Candidate status updated',
-//     description: 'Michael Johnson moved to "Hired" stage',
-//     time: '2 days ago',
-//     read: true,
-//     type: 'status'
-//   },
-// ];
+import { getFormattedDateTime } from "../utils/helpers"
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -109,7 +74,7 @@ const NotificationsPage = () => {
         description={
           <>
             <div>{item.message}</div>
-            <Text type="secondary" style={{fontSize:'0.75rem'}}>{getDaysAgo(item.created_at)}</Text>
+            <Text type="secondary" style={{fontSize:'0.75rem'}}>{getFormattedDateTime(item.created_at)}</Text>
           </>
         }
       />

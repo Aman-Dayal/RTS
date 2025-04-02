@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import FilterableTable from '../components/BaseTable';
-import { Form, Input, Select, Upload, Tag, Space, Button, Tooltip, Modal } from 'antd';
+import { Form, Tag, Space, Button, Tooltip } from 'antd';
 import useInterviews from '../utils';
-import {
-  EditOutlined, DeleteOutlined, EyeOutlined, CheckOutlined, UploadOutlined
-} from '@ant-design/icons';
-const { TextArea } = Input;
-
+import { EditOutlined, DeleteOutlined, EyeOutlined, CheckOutlined} from '@ant-design/icons';
+import { getFormattedDateTime } from '../utils/helpers';
+import BaseForm from "../components/BaseForm";
+import { candidateFields } from "../constants/formFields";
 const getStatusColor = (status) => {
   switch (status) {
     case 'Applied': return 'blue';
@@ -61,8 +60,8 @@ const CandidatesPage = () => {
     { title: 'Email', dataIndex: 'email', key: 'email', searchable: true },
     { title: 'Contact', dataIndex: 'phone', key: 'phone', searchable: true },
     { title: 'Job', dataIndex: 'applied_position', key: 'applied_position', searchable: true },
-    { title: 'Created At', dataIndex: 'created_at', key: 'created_at', isDateColumn: true, searchable: true },
-    { title: 'Updated At', dataIndex: 'updated_at', key: 'updated_at', isDateColumn: true, searchable: true },
+    { title: 'Created At', dataIndex: 'created_at', key: 'created_at', isDateColumn: true, searchable: true, render: (text) => <Text>{getFormattedDateTime(text)}</Text>},
+    { title: 'Updated At', dataIndex: 'updated_at', key: 'updated_at', isDateColumn: true, searchable: true, render: (text) => getFormattedDateTime(text) },
     {
       title: 'Status', dataIndex: 'status', key: 'status',
       render: (text) => <Tag color={getStatusColor(text)}>{text || 'N/A'}</Tag>,
@@ -128,7 +127,16 @@ const CandidatesPage = () => {
   return (
       <div style={{width:"100vw"}}>
         <FilterableTable columnsConfig={columnsConfig} apiUrl="/api/candidates/" />
-          <Modal
+          <BaseForm
+          isOpen={isModalOpen}
+          onCancel={handleCancel}
+          onSubmit={handleSubmit}
+          form={form}
+          title="Add New Candidate"
+          editing={false}
+          fields={candidateFields}
+        />
+          {/* <Modal
             title={editingCandidate ? "Edit Candidate" : "Add New Candidate"}
             open={isModalOpen}
             onCancel={handleCancel}
@@ -219,7 +227,7 @@ const CandidatesPage = () => {
                 </Space>
               </Form.Item>
             </Form>
-          </Modal>
+          </Modal> */}
     </div>
   );
 };

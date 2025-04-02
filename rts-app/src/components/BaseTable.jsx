@@ -4,7 +4,7 @@ import { SearchOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import dayjs from 'dayjs';
 import SideBar from './SideBar';
-
+import { getFormattedDateTime } from '../utils/helpers';
 // const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
@@ -120,6 +120,8 @@ const FilterableTable = ({ columnsConfig, apiUrl }) => {
   const columns = columnsConfig.map((col) => ({
     ...col,
     ...(col.searchable ? getColumnSearchProps(col.dataIndex, col.isDateColumn) : {}),
+    render: (text) => 
+      col.isDateColumn ? getFormattedDateTime(text) : text ? text.toString() : '',
   }));
 
   return (
