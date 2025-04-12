@@ -1,113 +1,168 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Layout, 
+  Layout,
+  Radio,
   Menu, 
   Button, 
+  Typography,
   Row, 
   Col, 
   Card, 
   Statistic, 
   List, 
   Tag, 
-  Form, 
+  Spin, 
   Avatar,
 } from 'antd';
-import { 
-  FileSearchOutlined,
-  CheckCircleOutlined,
-  UserOutlined, 
-  ScheduleOutlined,
-} from '@ant-design/icons';
+import { Bar, Pie, Column} from "@ant-design/plots";
 import axios from 'axios';
 import { getFormattedDateTime  } from '../utils/helpers';
 import { Link } from 'react-router-dom';
 import SideBar from '../components/SideBar';
-import BaseForm from '../components/BaseForm';
-import { candidateFields } from '../constants/formFields';
+import { candidateFields, interviewFields, jobFields, statsData } from '../constants/formData';
 const {  Content } = Layout;
+const { Title } = Typography;
 
-const upcomingInterviews = [
-  { id: 1, candidate: 'John Doe', position: 'Frontend Developer', time: '2023-06-01 10:00', interviewer: 'Sarah Manager' },
-  { id: 2, candidate: 'Lisa Wong', position: 'Marketing Specialist', time: '2023-06-01 14:30', interviewer: 'Mike Director' },
-  { id: 3, candidate: 'Robert Chen', position: 'Data Analyst', time: '2023-06-02 11:00', interviewer: 'David Lead' },
-];
+
+function CandidateDistribution({ jobsData }) {
+  const [chartType, setChartType] = useState('horizontal');
+  const columnConfig = {
+    data:jobsData,
+    xField: 'job',
+    yField: 'candidates',
+    label: {
+      style: {
+        fill: '#FFFFFF',
+        opacity: 0.6,
+      },
+    },
+    xAxis: {
+      label: {
+        autoHide: true,
+        autoRotate: true,
+      },
+    },
+    meta: {
+      job: {
+        alias: 'Job Position',
+      },
+      candidates: {
+        alias: 'Number of Candidates',
+      },
+    },
+    color: '#1890ff',
+    width: Math.max(320, jobsData.length * 20),  
+
+    scrollbar: {
+      type: 'horizontal',
+    },
+  };
+
+  const barConfig = {
+    data:jobsData,
+    yField: 'candidates',
+    xField: 'job',
+    label: {
+      style: {
+        fill: '#FFFFFF',
+        opacity: 0.6,
+      },
+    },
+    autoFit: true,
+    height: Math.max(320, jobsData.length * 20),  
+    scrollbar: {
+      type: 'vertical',
+    },
+    meta: {
+      job: {
+        alias: 'Job Position',
+      },
+      candidates: {
+        alias: 'Number of Candidates',
+      },
+    },
+    color: '#1890ff',
+    // maxBarWidth: 50,
+    barStyle: {
+      radius: [2, 2, 0, 0],
+    },
+    legend: false,
+  
+  };
+
+  const cardStyle = {
+    width: '100%',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+    marginBottom:'2.5rem',
+  };
+
+  const containerStyle = {
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '16px'
+  };
+
+  const headerStyle = {
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center'
+  };
+
+  const chartContainerStyle = {
+    height: '260px',
+    overflow: 'auto', // Enable scrolling
+    // position: 'relative'
+  };
+
+  const titleStyle = {
+    margin: 0
+  };
+
+  return (
+    <Card style={cardStyle}>
+      <div style={containerStyle}>
+        <div style={headerStyle}>
+          <Title level={4} style={titleStyle}>Candidates per Job Position</Title>
+          <Radio.Group 
+            value={chartType} 
+            onChange={(e) => setChartType(e.target.value)}
+            buttonStyle="solid"
+          >
+            <Radio.Button value="horizontal">Horizontal</Radio.Button>
+            <Radio.Button value="vertical">Vertical</Radio.Button>
+          </Radio.Group>
+        </div>
+        
+        <div style={chartContainerStyle}>
+          {chartType === 'horizontal' ? (
+            <Bar {...barConfig} />
+          ) : (
+            <Column {...columnConfig} />
+          )}
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 const Dashboard = () => {
-  const [form] = Form.useForm();
 
   const [summary, setSummary] = useState([]);
   const [recentCandidates, setCandidates] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCandidate, setEditingCandidate] = useState(null);
-
   useEffect(() => {
     axios
-      .get("/api/dashboard/summary")
+      .get("/api/dashboard/summary", { withCredentials: true })
       .then((response) => {
         setSummary(response.data);
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching dashboard summary:", error);
         setError("Failed to load dashboard data.");
         setLoading(false);
       });
   }, []);
-
-  useEffect(() => {
-    const fetchCandidates = async () => {
-      try {
-        const response = await axios.get("/api/candidatesv2/", {
-          params: { sort_by: "created_at", order: "desc", limit: 5,},
-        });
-        console.log(response.data);
-        setCandidates(response.data);
-      } catch (error) {
-        console.error("Error fetching candidates:", error);
-      }
-    };
-    fetchCandidates();
-  }, []);
-
-  const handleCancel = () => {
-    console.log("Closing modal");
-    setIsModalOpen(false);
-    setEditingCandidate(null);
-    form.resetFields();
-  };
-  const handleAddCandidate = async () => {
-    try {
-      setLoading(true);
-      const { notes, resume, applied_position, ...formData }= form.getFieldsValue(); // Get all form values
-      console.log(formData);
-      const response = await axios.post("/api/candidates", formData);
-      console.log("Response:", response.data);
-      // message.success("Candidate created successfully!");
-
-      form.resetFields(); // Clear form after successful submission
-    } catch (error) {
-      console.error("Error creating profile:", error);
-      setError("Failed to create profile.");
-      // message.error("Error creating candidate.");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const onAdd = () => {
-    console.log('add button clicked');
-    };
-  const addCandidate = () => {
-    setIsModalOpen(true);
-    };
-  const onDelete = () => {
-    console.log('delete button clicked');
-    };
-  const onView = () => {
-    console.log('delete button clicked');
-    };
-
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -120,82 +175,74 @@ const Dashboard = () => {
     }
   };
 
+  const StatisticCard = ({ value, title }) => (
+    <Col xs={24} sm={12} md={6} lg={6} style={{ marginBottom: '1.5rem' }}>
+      <Card style={{ textAlign: 'center'}}>
+        <Statistic 
+          value={value} 
+          valueStyle={{ fontSize: '2.5rem' }} 
+        />
+        <div style={{ marginTop: '1rem', fontSize: '1rem', fontWeight: 'bold' }}>
+          {title}
+        </div>
+      </Card>
+    </Col>
+  );
+  
+
   return (
     <Layout style={{ minHeight: '100vh', width:'100vw' }}>
       <SideBar/>
+
         <div>
         <Content style={{ padding: '1.5rem', width:'80vw'}}>
-          <Row gutter={[16, 16]} style={{ marginBottom: '1.5rem' }}>
-            <Col xs={24} sm={12} md={6} style={{ marginBottom: '1.5rem' }}>
-              <Card>
-                <Statistic 
-                  title="Active Jobs" 
-                  value={summary.total_jobs} 
-                  prefix={<FileSearchOutlined />} 
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6} style={{ marginBottom: '1.5rem' }}>
-              <Card>
-                <Statistic 
-                  title="Total Candidates" 
-                  value={summary.total_candidates} 
-                  prefix={<UserOutlined />} 
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} md={6} style={{ marginBottom: '1.5rem' }}>
-              <Card>
-                <Statistic 
-                  title="Interviews This Week" 
-                  value={summary.total_interviews_this_week} 
-                  prefix={<ScheduleOutlined />} 
-                />
-              </Card>
-            </Col>
-            
-            <Col xs={24} sm={12} md={6} style={{ marginBottom: '1.5rem' }}>
-              <Card>
-                <Statistic 
-                  title="Positions Filled" 
-                  value={5} 
-                  prefix={<CheckCircleOutlined />} 
-                />
-              </Card>
-            </Col>
+          <Row gutter={[16, 16]}>
+          {summary?.top_level?.length > 0 && summary.top_level.map((stat, index) => (
+            <StatisticCard key={index} {...stat} />
+            ))}
           </Row>
-          <Card 
-          title={<div style={{ textAlign: 'center' }}>Actions</div>}
-          style={{ 
-          padding: "16px", 
-          marginBottom: "50px",
-          borderRadius: "8px", 
-          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.1)" 
-        }}
-      >
-      <Row gutter={[16, 16]} justify="center">
-        <Col xs={24} sm={12} md={6}>
-          <Button type="primary" block onClick={onAdd}>
-            Post New Job
-          </Button>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Button type="default" block onClick={addCandidate}>
-            Add Candidate
-          </Button>
-        </Col>
-        <Col xs={24} sm={12} md={6}>
-          <Button type="dashed" danger block onClick={onDelete}>
-            Schedule Interview
-          </Button>
-        </Col>
-        {/* <Col xs={24} sm={12} md={6}>
-          <Button type="link" block onClick={onView}>
-            View
-          </Button>
-        </Col> */}
-      </Row>
-    </Card>
+          <Row gutter={[16, 16]}>
+          <Col xs={24} sm={24} md={16} lg={8}>
+          <Card title={<div style={{ textAlign: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.1)', }}
+            >Job Status</div>} style={{width:"100%", marginBottom:'1.5rem'}} >
+          {summary?.status_summary?.length > 0 ? (
+          <Pie
+            data={summary.status_summary}
+            angleField="value"
+            colorField="type"
+            innerRadius={0.6}
+            height={250}
+            label={{
+              type: 'inner',
+              offset: '-30%',
+              content: '{value}',
+              style: {
+                fontSize: 14,
+                textAlign: 'center',
+              },
+            }}
+            legend={{
+              color: {
+                title: false,
+                position: "right",
+              },
+            }}
+          />
+          ) : (
+            <Spin />
+          )}
+        </Card>
+          </Col>
+          <Col xs={24} sm={24} md={10} lg={16}>
+          {summary?.candidates_per_job?.length > 0 ? (
+
+          <CandidateDistribution jobsData={summary.candidates_per_job}/>
+          ):(<div>
+            <Spin />
+            </div>
+          )}
+          </Col>
+          </Row>
           <Row gutter={16}>
             <Col xs={24} lg={12} style={{ marginBottom: '1.5rem' }}>
               <Card 
@@ -203,7 +250,7 @@ const Dashboard = () => {
                 extra={<Link to="/candidates">View All</Link>}
               >
                 <List
-                  dataSource={recentCandidates}
+                  dataSource={summary.recent_candidates}
                   renderItem={item => (
                     <List.Item>
                       <List.Item.Meta
@@ -223,7 +270,7 @@ const Dashboard = () => {
                 extra={<Link to="/interviews">View All</Link>}
               >
                 <List
-                  dataSource={upcomingInterviews}
+                  dataSource={summary.upcoming_interviews}
                   renderItem={item => (
                     <List.Item>
                       <List.Item.Meta
@@ -231,7 +278,7 @@ const Dashboard = () => {
                         description={
                           <>
                             <div>{item.position}</div>
-                            <div>{new Date(item.time).toLocaleString()}</div>
+                            <div>{new Date(item.date).toLocaleString()}</div>
                             <div>Interviewer: {item.interviewer}</div>
                           </>
                         }
@@ -244,15 +291,6 @@ const Dashboard = () => {
           </Row>
         </Content>
         </div>
-        <BaseForm
-      isOpen={isModalOpen}
-      onCancel={handleCancel}
-      onSubmit={handleAddCandidate}
-      form={form}
-      title="Add New Candidate"
-      editing={false}
-      fields={candidateFields}
-  />
       </Layout>
   );
 };

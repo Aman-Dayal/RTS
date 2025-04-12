@@ -5,14 +5,11 @@ const ProtectedRoute = () => {
   const { user, isLoading } = useAuth();
   if (isLoading) 
     {
-    return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", width:"100vw" }}>
+    return (<div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", width:"100vw" }}>
             <Spin size="large" />
-          </div>;
-    }
-  if (!user) {
-    return <Navigate to="/login" replace />;
+          </div>
+    );
   }
-  return <Outlet />;
-};
+  return user ? <Outlet /> : <Navigate to="/login" replace />;};
 
 export default ProtectedRoute;

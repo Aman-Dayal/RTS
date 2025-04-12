@@ -6,7 +6,7 @@ from database.db import SessionLocal
 from models.job_posting import JobPosting
 from schemas.job_posting import JobPostingCreate, JobPostingResponse
 import psycopg2.errors as pg_error
-
+from common.logger import logger
 router = APIRouter()
 
 def get_db():
@@ -19,7 +19,9 @@ def get_db():
 @router.post("/job_postings/", response_model=JobPostingResponse)
 def create_job_posting(job_posting: JobPostingCreate, db: Session = Depends(get_db)):
     try:
+        logger.info(job_posting)
         db_job_posting = JobPosting(**job_posting.model_dump())
+        
         db.add(db_job_posting)
         db.commit()
         db.refresh(db_job_posting)

@@ -1,12 +1,13 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime,date,time
 
 class InterviewBase(BaseModel):
-    # candidate_id: str
-    applied_position: int
-    interviewer: Optional[str] = None
-    schedule_time: Optional[datetime] = None
+    candidate_id: int
+    job_id: int
+    interviewer_id: Optional[int] = None
+    date: date
+    time: time
     status: str
 
 class InterviewCreate(InterviewBase):
@@ -14,6 +15,9 @@ class InterviewCreate(InterviewBase):
 
 class Interviewresponse(InterviewBase):
     id: int
+    candidate: str
+    job_title: str
+    interviewer: str
     created_at: datetime
     updated_at: datetime
 
@@ -21,8 +25,4 @@ class Interviewresponse(InterviewBase):
         from_attributes = True
 
 class InterviewUpdate(BaseModel):
-    # candidate_id: str
-    applied_position: str
-    interviewer: Optional[str] = None
-    schedule_time: Optional[datetime] = None
-    status: int
+    pass

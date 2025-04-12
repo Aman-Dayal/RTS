@@ -10,7 +10,7 @@ const { Content } = Layout;
 const RegisterPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { register } = useAuth();
+  const { user, register } = useAuth();
   const navigate = useNavigate();
   const onFinish = async (values) => {
     setLoading(true);
@@ -28,20 +28,21 @@ const RegisterPage = () => {
     }
   };
   return (
-<Layout style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
-  <Content
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingTop: '3rem',
-      paddingBottom: '3rem',
-      paddingLeft: '1rem',
-      paddingRight: '1rem',
-    }}
-  >
-    <Card style={{ width: '100%', maxWidth: '28rem', padding: '1.5rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+    user ? navigate("/dashboard") : (
+      <Layout style={{ minHeight: '100vh', backgroundColor: '#f9fafb' }}>
+        <Content
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingTop: '3rem',
+            paddingBottom: '3rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+          }}
+        >
+        <Card style={{ width: '100%', maxWidth: '28rem', padding: '1.5rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
 
             <Link to="/">
               <Title level={3} className="text-primary">RecruitTrack</Title>
@@ -137,7 +138,7 @@ const RegisterPage = () => {
           </div>
         </Card>
       </Content>
-    </Layout>
+    </Layout>)
   );
 };
 

@@ -13,13 +13,11 @@ const NotificationsPage = () => {
   const [loading, setLoading] = useState(false);
   useEffect(() => {
     axios
-      .get("/api/notifications")
+      .get("/api/notifications/", {withCredentials: true})
       .then((response) => {
-        console.log('--__--',response);
         setNotifications(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching notifications:", error);
       });
   }, []);
   const unreadCount = notifications.filter(n => !n.read).length;

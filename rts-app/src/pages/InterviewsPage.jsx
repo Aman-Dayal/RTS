@@ -37,9 +37,10 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined
 } from '@ant-design/icons';
+import dayjs from "dayjs";
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import FilterableTable from '../components/BaseTable';
+import FilterableTable from '../components/BasePage';
 const { Header, Sider, Content } = Layout;
 const { Title, Text } = Typography;
 const { Search } = Input;
@@ -103,7 +104,6 @@ const initialInterviews = [
 
 const InterviewsPage = () => {
   const [collapsed, setCollapsed] = useState(false);
-  const [interviews, setInterviews] = useState(initialInterviews);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [editingInterview, setEditingInterview] = useState(null);
@@ -113,66 +113,8 @@ const InterviewsPage = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
-  const toggleCollapsed = () => {
-    setCollapsed(!collapsed);
-  };
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const showAddInterviewModal = () => {
-    setEditingInterview(null);
-    form.resetFields();
-    setIsModalOpen(true);
-  };
-
-  const showEditInterviewModal = (interview) => {
-    setEditingInterview(interview);
-    form.setFieldsValue({
-      candidate: interview.candidate,
-      position: interview.position,
-      interviewer: interview.interviewer,
-      date: interview.date,
-      time: interview.time,
-      status: interview.status,
-    });
-    setIsModalOpen(true);
-  };
-
-  const showFeedbackModal = (interview) => {
-    setCurrentInterview(interview);
-    feedbackForm.setFieldsValue({
-      feedback: interview.feedback || '',
-    });
-    setIsFeedbackModalOpen(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
-
   const handleFeedbackCancel = () => {
     setIsFeedbackModalOpen(false);
-  };
-
-  const handleSubmit = (values) => {
-    if (editingInterview) {
-      // Update existing interview
-      const updatedInterviews = interviews.map(interview => 
-        interview.id === editingInterview.id ? { ...interview, ...values } : interview
-      );
-      setInterviews(updatedInterviews);
-    } else {
-      // Add new interview
-      const newInterview = {
-        id: Math.max(...interviews.map(interview => interview.id)) + 1,
-        ...values,
-        feedback: '',
-      };
-      setInterviews([...interviews, newInterview]);
-    }
-    setIsModalOpen(false);
   };
 
   const handleFeedbackSubmit = (values) => {
@@ -181,20 +123,6 @@ const InterviewsPage = () => {
     );
     setInterviews(updatedInterviews);
     setIsFeedbackModalOpen(false);
-  };
-
-  const handleDeleteInterview = (id) => {
-    Modal.confirm({
-      title: 'Confirm Delete',
-      content: 'Are you sure you want to delete this interview?',
-      okText: 'Yes',
-      okType: 'danger',
-      cancelText: 'No',
-      onOk() {
-        const updatedInterviews = interviews.filter(interview => interview.id !== id);
-        setInterviews(updatedInterviews);
-      },
-    });
   };
 
   const getStatusColor = (status) => {
@@ -215,7 +143,7 @@ const InterviewsPage = () => {
     },
     {
       title: 'Position',
-      dataIndex: 'position',
+      dataIndex: 'job_title',
       key: 'position',
     },
     {
@@ -224,135 +152,30 @@ const InterviewsPage = () => {
       key: 'interviewer',
     },
     {
-      title: 'Date & Time',
-      key: 'datetime',
-      render: (_, record) => `${record.date} ${record.time}`,
+      title: 'Date',
+      key: 'date',
+      dataIndex: 'date',
+      render: (_, record) => dayjs(record.date, 'YYYY-MM-DD').format('MMM D, YYYY'),
     },
+    {
+      title: 'Time',
+      key: 'time',
+      dataIndex:'time',
+      render: (_, record) => dayjs(record.time, "HH:mm:ss").format("hh:mm A"),    },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
       render: text => <Tag color={getStatusColor(text)}>{text}</Tag>,
     },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          {record.status === 'Scheduled' && (
-            <Button type="text" icon={<CheckOutlined />} onClick={() => showFeedbackModal(record)}/>
-          )}
-          {record.status === 'Completed' && (
-            <Button type="text" icon={<EyeOutlined />} onClick={() => showFeedbackModal(record)}>
-              View Feedback
-            </Button>
-          )}
-          <Button type="text" icon={<EditOutlined />} onClick={() => showEditInterviewModal(record)} />
-          <Button type="text" danger icon={<DeleteOutlined />} onClick={() => handleDeleteInterview(record.id)} />
-        </Space>
-      ),
-    },
   ];
 
   return (
     <Layout style={{ minHeight: '100vh', width:'100vw' }}>
-      <FilterableTable columnsConfig={columns} apiUrl={'http://localhost:8000/api/interviews'}></FilterableTable>
+      <FilterableTable columnsConfig={columns} apiUrl={'/api/interviews/'} type="interview"></FilterableTable>
         <Layout>
           <Content style={{ padding: '1.5rem' }}>
-            <Modal
-              title={editingInterview ? "Edit Interview" : "Schedule New Interview"}
-              open={isModalOpen}
-              onCancel={handleCancel}
-              footer={null}
-              style={{ top: 20 }}
-            >
-            <Form
-              form={form}
-              layout="vertical"
-              onFinish={handleSubmit}
-            >
-              <Form.Item
-                name="candidate"
-                label="Candidate"
-                rules={[{ required: true, message: 'Please select a candidate' }]}
-              >
-                <Select placeholder="Select candidate">
-                  <Option value="John Doe">John Doe - Frontend Developer</Option>
-                  <Option value="Jane Smith">Jane Smith - UX Designer</Option>
-                  <Option value="Mike Johnson">Mike Johnson - Product Manager</Option>
-                  <Option value="Sarah Williams">Sarah Williams - Backend Developer</Option>
-                  <Option value="David Lee">David Lee - Frontend Developer</Option>
-                </Select>
-              </Form.Item>             
-              <Form.Item
-                name="position"
-                label="Position"
-                rules={[{ required: true, message: 'Please select position' }]}
-              >
-                <Select placeholder="Select position">
-                  <Option value="Frontend Developer">Frontend Developer</Option>
-                  <Option value="Backend Developer">Backend Developer</Option>
-                  <Option value="UX Designer">UX Designer</Option>
-                  <Option value="Product Manager">Product Manager</Option>
-                  <Option value="Marketing Specialist">Marketing Specialist</Option>
-                  <Option value="Data Analyst">Data Analyst</Option>
-                </Select>
-              </Form.Item>              
-              <Form.Item
-                name="interviewer"
-                label="Interviewer"
-                rules={[{ required: true, message: 'Please select interviewer' }]}
-              >
-                <Select placeholder="Select interviewer">
-                  <Option value="Sarah Manager">Sarah Manager</Option>
-                  <Option value="Mike Director">Mike Director</Option>
-                  <Option value="Lisa VP">Lisa VP</Option>
-                  <Option value="David Lead">David Lead</Option>
-                  <Option value="John Marketing">John Marketing</Option>
-                </Select>
-              </Form.Item>              
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Form.Item
-                    name="date"
-                    label="Date"
-                    rules={[{ required: true, message: 'Please select date' }]}
-                  >
-                    <Input placeholder="YYYY-MM-DD" />
-                  </Form.Item>
-                </Col>
-                <Col span={12}>
-                  <Form.Item
-                    name="time"
-                    label="Time"
-                    rules={[{ required: true, message: 'Please select time' }]}
-                  >
-                    <Input placeholder="HH:MM" />
-                  </Form.Item>
-                </Col>
-              </Row>              
-              <Form.Item
-                name="status"
-                label="Status"
-                rules={[{ required: true, message: 'Please select status' }]}
-              >
-                <Select placeholder="Select status">
-                  <Option value="Scheduled">Scheduled</Option>
-                  <Option value="Completed">Completed</Option>
-                  <Option value="Cancelled">Cancelled</Option>
-                </Select>
-              </Form.Item>             
-              <Form.Item>
-                <Space>
-                  <Button onClick={handleCancel}>Cancel</Button>
-                  <Button type="primary" htmlType="submit">
-                    {editingInterview ? 'Update' : 'Schedule'}
-                  </Button>
-                </Space>
-              </Form.Item>
-            </Form>
-          </Modal>
-          <Modal
+          {/* <Modal
             title="Interview Feedback"
             open={isFeedbackModalOpen}
             onCancel={handleFeedbackCancel}
@@ -395,7 +218,7 @@ const InterviewsPage = () => {
                 </Space>
               </Form.Item>
             </Form>
-          </Modal>
+          </Modal> */}
         </Content>
       </Layout>
     </Layout>

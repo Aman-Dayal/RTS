@@ -16,6 +16,7 @@ class UserCreate(UserBase):
     Model for creating a new user.    
     - **password**: The password for the user.
     """
+    name: str
     password: str
     role: str
 
@@ -27,4 +28,5 @@ class UserRead(UserBase):
     - **role**: The role of the user (e.g., admin, user).
     """
     id: int
+    name: str
     role: str

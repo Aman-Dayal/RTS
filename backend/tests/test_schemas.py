@@ -1,5 +1,5 @@
 import pytest
-from schemas.interview import InterviewSchema  # Adjust the import as necessary
+from schemas.interview import InterviewBase
 
 def test_interview_schema():
     data = {
@@ -8,9 +8,8 @@ def test_interview_schema():
         "date": "2023-10-01T10:00:00Z",
         "status": "scheduled"
     }
-    schema = InterviewSchema(**data)
+    schema = InterviewBase(**data)
     assert schema.candidate_id == 1
     assert schema.interviewer_id == 2
     assert schema.status == "scheduled"
 
-# Add more tests for other schemas as needed

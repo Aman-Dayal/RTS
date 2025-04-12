@@ -9,16 +9,11 @@ const { Content } = Layout;
 
 const LoginPage = () => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const { login, user} = useAuth();
+  const { login, user, error, setError } = useAuth();
   const navigate = useNavigate();
-  if (user){
-    navigate("/dashboard")
-  };
+
   const onFinish = async (values) => {
-    setLoading(true);
-    setError(null);
-    
+    setLoading(true);    
     try {
       await login(values.email, values.password);
       navigate('/dashboard');
@@ -29,6 +24,7 @@ const LoginPage = () => {
     }
   };
   return (
+    user ? navigate("/dashboard") : (
     <Layout style={{ minHeight: '100vh', backgroundColor: '#F7FAFC' }}>
       <Content style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem' }}>
     <Card style={{ width: '100%', maxWidth: '28rem', padding: '1.5rem' }}>
@@ -38,15 +34,7 @@ const LoginPage = () => {
           </Link>
             <Title level={4} style={{marginTop: '0.5rem'}}>Sign in to your account</Title>
       </div>
-          {error && (
-            <Alert 
-              message="Login Error" 
-              description={error} 
-              type="error" 
-              showIcon 
-              style={{ marginBottom: '1rem' }}
-            />
-          )}
+
           <Form
             name="login"
             initialValues={{ remember: true }}
@@ -75,6 +63,14 @@ const LoginPage = () => {
                 placeholder="Password"
               />
             </Form.Item>
+              {error && (
+              <Alert 
+                description={error} 
+                type="error" 
+                showIcon 
+                style={{ marginBottom: '1rem' }}
+              />
+            )}
             <Form.Item>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Link to="/forgot-password" style={{ fontSize: '0.875rem' }}>
@@ -103,7 +99,7 @@ const LoginPage = () => {
           </div>
         </Card>
       </Content>
-    </Layout>
+    </Layout>)
   );
 };
 

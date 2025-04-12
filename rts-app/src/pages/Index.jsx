@@ -9,23 +9,17 @@ import {
   RocketOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
+import { useNavigate} from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 const { Header, Footer, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const navigate = useNavigate();
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (user) {
-    navigate("/dashboard");
-  }
   return (
+    user ? <Navigate to="/dashboard"/> : 
+
       <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ backgroundColor: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2rem', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)' }}>
         <div style={{display:'flex', alignItems:'center'}}>

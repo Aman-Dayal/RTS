@@ -2,40 +2,13 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useDrag, useDrop, DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import axios from "axios";
-import { Card, DatePicker, Typography, Button, Input } from "antd";
+import { Card, DatePicker, Typography, Button, Input, Spin, Select, Row} from "antd";
 import SideBar from "../components/SideBar";
 import Layout from "antd/es/layout/layout";
 import { getFormattedDateTime } from '../utils/helpers';
 const { Text } = Typography;
 const ItemType = "CANDIDATE";
 const { TextArea } = Input;
-
-function debounce(func, wait) {
-  let timeout;
-  
-  return function(...args) {
-    const context = this;
-    
-    if (timeout) {
-      clearTimeout(timeout);
-    }
-    
-    timeout = setTimeout(() => {
-      timeout = null;
-      func.apply(context, args);
-    }, wait);
-  };
-}
-
-const getDaysAgo = (timestamp) => {
-  const appliedDate = new Date(timestamp);
-  const currentDate = new Date();
-  const diffTime = currentDate - appliedDate;
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "1 day ago";
-  return `${diffDays} days ago`;
-};
 
 const CandidateCard = ({ candidate }) => {
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -46,18 +19,14 @@ const CandidateCard = ({ candidate }) => {
     }),
   }));
 
-  const [interviewDate, setInterviewDate] = useState(candidate.interview_date || null);
-  const [feedback, setFeedback] = useState(candidate.feedback || "");
-  const updateQueue = new Map();
-  
-  const handleSchedule = (date) => {
-    setInterviewDate(date);
-    updateCandidate(candidate.id, { interview_date: date });
-  };
+  // const handleSchedule = (date) => {
+  //   setInterviewDate(date);
+  //   updateCandidate(candidate.id, { interview_date: date });
+  // };
 
-  const handleSaveFeedback = () => {
-    updateCandidate(candidate.id, { feedback });
-  };
+  // const handleSaveFeedback = () => {
+  //   updateCandidate(candidate.id, { feedback });
+  // };
 
   return (
     <Card
@@ -81,31 +50,10 @@ const CandidateCard = ({ candidate }) => {
       <div style={{display:'flex',flexDirection:'column', fontSize:'14px',marginTop:'6px'}}>
         <Text>Contact: {candidate.phone}</Text>
         <Text>Email: {candidate.email}</Text>
-        <Text>Job: {candidate.applied_position}</Text>
+        <Text>Job: {candidate.job_title}</Text>
       </div>
 
-      {candidate.status === "Screening" && (
-        <>
-          <Text type="secondary">Interview Date:</Text>
-          <DatePicker
-            value={interviewDate ? interviewDate : null}
-            onChange={(date, dateString) => handleSchedule(dateString)}
-          />
-        </>
-      )}
-      {candidate.status === "Interview Scheduled" && (
-        <>
-          <Text type="secondary">Interview Feedback:</Text>
-          <TextArea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            rows={2}
-          />
-          <Button type="primary" onClick={handleSaveFeedback} style={{ marginTop: "8px" }}>
-            Save Feedback
-          </Button>
-        </>
-      )}
+      
     </Card>
   );
 };
@@ -151,16 +99,28 @@ const KanbanBoard = () => {
   const [candidates, setCandidates] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  const [selectedJobId, setSelectedJobId] = useState(null);
+  const [jobOptions, setJobOptions] = useState([]);
+  function extractUniqueJobInfo(data) {
+    const uniqueJobs = new Map();    
+    for (const item of data) {
+      if (!uniqueJobs.has(item.job_id)) {
+        uniqueJobs.set(item.job_id, item.job_title);
+      }
+    }    
+    return Array.from(uniqueJobs).map(([job_id, job_title]) => ({ value : job_id, label : job_title }));
+  }
   useEffect(() => {
     const fetchCandidates = async () => {
       setIsLoading(true);
       try {
-        const response = await axios.get("/api/candidates/");
+        const response = await axios.get("/api/candidates/", {withCredentials:true});
         setCandidates(response.data);
+        const uniqueJobs = extractUniqueJobInfo(response.data);
+        console.log(response.data,uniqueJobs);
+        setJobOptions(uniqueJobs);
         setError(null);
       } catch (err) {
-        console.error("Failed to fetch candidates:", err);
         setError("Failed to load candidates. Please try again.");
       } finally {
         setIsLoading(false);
@@ -170,69 +130,24 @@ const KanbanBoard = () => {
     fetchCandidates();
   }, []);
 
-  const debouncedUpdateStatus = useCallback(
-    debounce((candidateId, newStatus) => {
-      axios.put(`/api/candidates/${candidateId}/`, { status: newStatus })
-        .then(response => {
-          console.log("Candidate status updated:", response.data);
-          setCandidates(prev => 
-            prev.map(candidate => 
-              candidate.id === candidateId ? { ...candidate, ...response.data } : candidate
-            )
-          );
-        })
-        .catch(error => {
-          console.error("Failed to update candidate status:", error);
-          setCandidates(prev => {
-            const candidate = prev.find(c => c.id === candidateId);
-            if (candidate) {
-              alert(`Failed to update status for ${candidate.name}. Please try again.`);
-            }
-            return prev;
-          });
-        });
-    }, 2500),
-    []
-  );
-
-  const updateCandidate = useCallback((candidateId, data) => {
-    axios.patch(`/api/candidates/${candidateId}/`, data)
-      .then(response => {
-        console.log("Candidate updated:", response.data);
-        setCandidates(prev => 
-          prev.map(candidate => 
-            candidate.id === candidateId ? { ...candidate, ...response.data } : candidate
-          )
-        );
-      })
-      .catch(error => {
-        console.error("Failed to update candidate:", error);
-        alert("Failed to update candidate information. Please try again.");
-      });
-  }, []);
-
-  const updateQueue = new Map(); // Track candidate update timers
+  const updateQueue = new Map();
 
   const moveCandidate = useCallback((id, fromStage, toStage) => {
-    if (fromStage === toStage) return; // Ignore if status doesn't change
+    if (fromStage === toStage) return;
   
-    // 🔹 1️⃣ Instantly update UI for a smooth experience
     setCandidates(prev => 
       prev.map(candidate =>
         candidate.id === id ? { ...candidate, status: toStage } : candidate
       )
     );
   
-    // 🔹 2️⃣ Reset the existing timer if the candidate is already in the queue
     if (updateQueue.has(id)) {
       clearTimeout(updateQueue.get(id));
     }
   
-    // 🔹 3️⃣ Schedule the API call after 3 seconds
-    const timer = setTimeout(() => {
-      axios.put(`/api/candidates/${id}/`, { status: toStage })
+    const timer = setTimeout( async () => {
+      await axios.put(`/api/candidates/${id}`, { status: toStage }, {withCredentials:true})
         .then(response => {
-          console.log("Candidate status updated:", response.data);
           setCandidates(prev => 
             prev.map(candidate =>
               candidate.id === id ? { ...candidate, ...response.data } : candidate
@@ -240,7 +155,6 @@ const KanbanBoard = () => {
           );
         })
         .catch(error => {
-          console.error("Failed to update candidate status:", error);
           alert("Failed to update candidate status. Please try again.");
           
           setCandidates(prev => 
@@ -266,35 +180,70 @@ const KanbanBoard = () => {
     { name: "Rejected", color: "#FF0000" },
   ];
 
-  if (isLoading) return <div>Loading candidates...</div>;
+
   if (error) return <div>{error}</div>;
 
   return (
-    <Layout>
-      <SideBar />
-      <DndProvider backend={HTML5Backend}>
+    <>
+      {isLoading ? (
         <div
           style={{
             display: "flex",
-            gap: "16px",
-            padding: "16px",
-            overflowX: "auto",
-            background: "#f4f4f4",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100vh",
+            width: "100vw",
           }}
         >
-          {stages.map(({ name, color }) => (
-            <KanbanColumn
-              key={name}
-              stage={name}
-              color={color}
-              candidates={candidates.filter((c) => c.status === name)}
-              moveCandidate={moveCandidate}
-            />
-          ))}
+          <Spin size="large" />
         </div>
-      </DndProvider>
-    </Layout>
+      ) : (
+        <Layout>
+          <SideBar />
+          <Layout.Content style={{ width: "100%", overflow: "hidden" }}>         
+          <div style={{ display: "flex",flexDirection:"column",}}>
+          <div style={{ display: "flex", gap: "16px",padding: "16px" }}>
+            <Select
+              style={{ minWidth: "200px" }}
+              placeholder="Filter by Job"
+              showSearch
+              allowClear
+              value={selectedJobId}
+              onChange={(value) => setSelectedJobId(value)}
+              options={jobOptions}
+              optionFilterProp="label"
+            />
+            <Button onClick={() => setSelectedJobId(null)}>Clear Filter</Button>
+          </div>
+          <DndProvider backend={HTML5Backend}>
+            <div
+              style={{
+                display: "flex",
+                gap: "16px",
+                padding: "16px",
+                overflowX: "auto",
+                background: "#f4f4f4",
+                width: "100%",
+              }}
+            >
+              {stages.map(({ name, color }) => (
+                <KanbanColumn
+                  key={name}
+                  stage={name}
+                  color={color}
+                  candidates={candidates.filter((c) => c.status === name &&
+                  (selectedJobId === null || c.job_id === selectedJobId))}
+                  moveCandidate={moveCandidate}
+                />
+              ))}
+            </div>
+          </DndProvider>
+          </div>
+          </Layout.Content>
+        </Layout>
+      )}
+    </>
   );
-};
+}
 
 export default KanbanBoard;

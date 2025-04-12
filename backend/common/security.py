@@ -11,9 +11,6 @@ from database.db import get_session
 from common.settings import settings
 from sqlalchemy.orm import Session
 
-api_key_header = APIKeyHeader(name=settings.api_header_name, auto_error=True)
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 def hash_password(password: str) -> str:
     logger.debug("Hashing password.")
 
@@ -55,7 +52,7 @@ def create_jwt_token(data: dict) -> str:
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, settings.secret_key, algorithm=settings.jwt_algorithm)
 
-def get_current_user(request:Request, session: Session = Depends(get_session)) -> Users:
+async def get_current_user(request:Request, session: Session = Depends(get_session)) -> Users:
     """
     Retrieves the current user based on the provided JWT token.    
     - **token**: The JWT token to decode.
@@ -67,7 +64,6 @@ def get_current_user(request:Request, session: Session = Depends(get_session)) -
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
-        headers={"Authorization": "Bearer"},
     )
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[settings.jwt_algorithm])
@@ -81,7 +77,3 @@ def get_current_user(request:Request, session: Session = Depends(get_session)) -
         raise credentials_exception
     return user
 
-def verify_api_key(api_key: str = Security(api_key_header)):
-    if api_key != settings.api_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
-    return api_key

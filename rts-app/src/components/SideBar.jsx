@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { 
+import {
   Layout,
   Menu,
   Typography,
-  Tooltip
+  Tooltip,
 } from 'antd';
 import {
   DashboardOutlined,
@@ -14,9 +14,9 @@ import {
   MenuUnfoldOutlined,
   MenuFoldOutlined,
   TeamOutlined,
-  ProjectOutlined
+  ProjectOutlined,
 } from '@ant-design/icons';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const { Sider } = Layout;
@@ -25,14 +25,63 @@ const { Title } = Typography;
 const SideBar = () => {
   const [collapsed, setCollapsed] = useState(true);
   const location = useLocation();
-  const { user,logout } = useAuth();
-  const toggleCollapsed = () => {
-    setCollapsed(!collapsed);
-  };
-  const handleLogout = () => {
-    logout();
-  };
-  
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const toggleCollapsed = () => setCollapsed(!collapsed);
+  const handleLogout = () => logout();
+
+  const items = [
+    {
+      key: 'toggle',
+      icon: collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />,
+      label: collapsed ? (
+        <Tooltip title="Open" placement="right">
+          <span>Open</span>
+        </Tooltip>
+      ) : (
+        'Close'
+      ),
+      onClick: toggleCollapsed,
+    },
+    {
+      key: '/notifications',
+      icon: <BellOutlined />,
+      label: <Link to="/notifications">Notifications</Link>,
+    },
+    {
+      key: '/dashboard',
+      icon: <DashboardOutlined />,
+      label: <Link to="/dashboard">Dashboard</Link>,
+    },
+    {
+      key: '/jobs',
+      icon: <FileSearchOutlined />,
+      label: <Link to="/jobs">Job Postings</Link>,
+    },
+    {
+      key: '/candidates',
+      icon: <TeamOutlined />,
+      label: <Link to="/candidates">Candidates</Link>,
+    },
+    {
+      key: '/interviews',
+      icon: <ScheduleOutlined />,
+      label: <Link to="/interviews">Interviews</Link>,
+    },
+    {
+      key: '/tracker',
+      icon: <ProjectOutlined />,
+      label: <Link to="/tracker">Status Tracker</Link>,
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      onClick: handleLogout,
+    },
+  ];
+
   return (
     <Sider
       trigger={null}
@@ -42,52 +91,31 @@ const SideBar = () => {
       width={250}
       style={{
         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.09)',
-        zIndex: 10
+        zIndex: 10,
       }}
-    >            
-      <div style={{ padding: "16px", height: "64px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+    >
+      <div
+        style={{
+          padding: '16px',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         {collapsed ? (
-          <img src="./logo.png" alt="Logo" style={{ width: "40px", height: "40px" }} />
+          <img src="./logo.png" alt="Logo" style={{ width: '40px', height: '40px' }} />
         ) : (
           <Title level={4}>RecruitTrack</Title>
         )}
       </div>
+
       <Menu
         mode="inline"
         selectedKeys={[location.pathname]}
+        items={items}
         style={{ borderRight: 0 }}
-      >
-        <Menu.Item key="toggle" icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} onClick={toggleCollapsed}>
-          {collapsed ? (
-            <Tooltip title="Open" placement="right">
-              <span>Open</span>
-            </Tooltip>
-          ) : (
-            <span>Close</span>
-          )}
-        </Menu.Item>
-        <Menu.Item key="/notifications" icon={<BellOutlined />}>
-          <Link to="/notifications">Notifications</Link>
-        </Menu.Item>
-        <Menu.Item key="/dashboard" icon={<DashboardOutlined />}>
-          <Link to="/dashboard">Dashboard</Link>
-        </Menu.Item>
-        <Menu.Item key="/jobs" icon={<FileSearchOutlined />}>
-          <Link to="/jobs">Job Postings</Link>
-        </Menu.Item>
-        <Menu.Item key="/candidates" icon={<TeamOutlined />}>
-          <Link to="/candidates">Candidates</Link>
-        </Menu.Item>
-        <Menu.Item key="/interviews" icon={<ScheduleOutlined />}>
-          <Link to="/interviews">Interviews</Link>
-        </Menu.Item>
-        <Menu.Item key="/tracker" icon={<ProjectOutlined />}>
-          <Link to="/tracker">Status Tracker</Link>
-        </Menu.Item>
-        <Menu.Item key="logout" onClick={handleLogout} icon={<LogoutOutlined />}>
-          <span>Logout</span>
-        </Menu.Item>
-      </Menu>
+      />
     </Sider>
   );
 };
